@@ -10,22 +10,42 @@
 | 窗口依赖 | 必须置顶 / 恢复最小化 | **不需要**，窗口可隐藏 |
 | 点击方式 | pyautogui 鼠标 + ADB 混用 | **全部 ADB**，鼠标不受干扰 |
 | 模板匹配 | 单尺度 TM_CCOEFF_NORMED | **多尺度匹配**（±10%），更鲁棒 |
+| 中文路径 | 不支持 | **支持**（使用 numpy 读取图片） |
 | click delay | 写死 2s | 参数化（默认 0.3s），速度提升数倍 |
 | sleep 冗余 | `is_image_visible` 每次 +1s | 无额外 sleep |
 | 错误日志 | 只有 print | 同时写文件 + 控制台 |
-| 代码结构 | 多文件、逻辑散落 | 单一 `MuMuController` 统一管理 |
+| 代码结构 | 多文件、逻辑散落 | 模块化 Step 设计，统一管理 |
 
 ## 文件结构
 
 ```
 mumu-auto-bg/
-├── config.py       # 所有可配置项（设备ID、路径、延迟等）
-├── core.py         # 核心控制器（截图 + ADB 操作 + 图像匹配）
-├── daily_tasks.py  # 日常任务集合
-├── start_game.py   # 启动/连接游戏
-├── main.py         # 入口，支持命令行参数
-├── run.log         # 运行日志（自动生成）
-└── README.md       # 本文档
+├── config.py           # 所有可配置项（设备ID、路径、延迟等）
+├── core.py             # 核心控制器（截图 + ADB 操作 + 图像匹配）
+├── actions.py          # 通用动作封装
+├── emulator.py         # 模拟器控制
+├── dailyNew.py         # 日常任务主入口
+├── tower/              # 职业塔模块
+│   ├── tower_main.py   # 职业塔主入口
+│   ├── step1_enter_tower.py
+│   └── step3_battle_floors.py
+├── steps/              # 日常任务步骤
+│   ├── step1_start_emulator.py
+│   ├── step3_enter_main_menu.py
+│   ├── step4_handle_envelope.py
+│   ├── step5_collect_and_sale.py
+│   ├── step6_collect_xianghuo.py
+│   ├── step7_handle_taofa.py
+│   ├── step8_go_to_shop.py
+│   ├── step9_share_game.py
+│   └── step10_get_honor.py
+├── pics/               # 图片模板（相对路径）
+│   ├── menu/           # 菜单相关
+│   ├── fight/          # 战斗相关
+│   ├── window/         # 窗口按钮
+│   └── ...
+├── test_tap_empty.py   # 测试脚本
+└── README.md
 ```
 
 ## 快速开始
@@ -34,69 +54,154 @@ mumu-auto-bg/
 
 ```bash
 pip install opencv-python numpy
-# Tesseract OCR（如需文字识别）
-# pip install pytesseract
 ```
 
 ### 2. 配置 `config.py`
 
 ```python
 DEVICE_ID = "127.0.0.1:16384"   # MuMu 默认端口
-PIC_ROOT  = r"H:\pic"            # 图片模板目录
+PIC_ROOT  = "pics"              # 图片模板目录（相对路径）
 ```
 
 ### 3. 运行
 
 ```bash
-# 全套日常（推荐）
-python main.py
+# 日常任务
+python dailyNew.py
 
-# 只跑职业塔
-python main.py --zhi-ye
+# 职业塔（所有职业）
+python tower/tower_main.py
 
-# 跳过游戏启动检查
-python main.py --skip-start
+# 职业塔（指定职业）
+python tower/tower_main.py --job shangren
+python tower/tower_main.py --job lieren xuezhe
+
+# 单独测试某个 Step
+python steps/step7_handle_taofa.py
+python tower/step1_enter_tower.py --job wuzhe
 ```
 
-## 截图后端切换
+## 支持的职业
 
-在 `config.py` 中修改：
+| 代码 | 职业 |
+|------|------|
+| `lieren` | 猎人 |
+| `xingguan` | 行商 |
+| `xuezhe` | 学者 |
+| `youxia` | 游侠 |
+| `yaoshi` | 药师 |
+| `jianshi` | 剑士 |
+| `shangren` | 商人 |
+| `wuzhe` | 武者 |
+
+## 核心功能
+
+### 日常任务 (dailyNew.py)
+
+1. 启动模拟器和游戏
+2. 进入主菜单
+3. 处理信封
+4. 收集并出售
+5. 收集香火
+6. 讨伐任务（普通/高级/一阶）
+7. 商店购买
+8. 分享游戏
+9. 领取荣誉
+
+### 职业塔 (tower/tower_main.py)
+
+1. 进入试炼之塔
+2. 选择职业（支持下滑查找）
+3. 挑战 1-4 层
+4. 自动战斗和结算
+5. 跳过已通关职业（检测 fivefive.png）
+
+## 关键特性
+
+### 长按操作
+
+部分场景需要长按才能触发：
 
 ```python
-# 方式1（默认）：adb exec-out，无需额外安装，完全后台
-SCREENSHOT_BACKEND = "adb"
-
-# 方式2：MuMu 官方 API，速度更快（需安装 MuMuPlayer SDK）
-SCREENSHOT_BACKEND = "mumu"
-MUMU_INSTALL_PATH = r"D:\Program Files\Netease\MuMuPlayer 12"
+c.long_press(x, y, duration_ms=1000)  # 长按1秒
+c.tap_empty_long(cnt=3)               # 长按空白3次
 ```
 
-## 可选升级：MuMu 官方 API
-
-MuMu12 在安装目录的 `shell/` 下提供了 Python SDK，主要优势：
-- 截图比 adb screencap 快 3-5 倍
-- 可获取安卓原始像素数据
-- 支持多实例独立控制
-
-在 `core.py` 的 `_screenshot_via_mumu()` 中已预置接入逻辑，
-只需将 `SCREENSHOT_BACKEND` 改为 `"mumu"` 即可自动使用。
-
-## 可选升级：特征点匹配（抗分辨率变化）
-
-如果模板匹配经常失效（界面有偏移/缩放），可在 `core.py` 的
-`find_image()` 中替换为 ORB 特征点匹配：
+### 滑动操作
 
 ```python
-# 在 find_image 中可选启用
-orb = cv2.ORB_create()
-kp1, des1 = orb.detectAndCompute(template_gray, None)
-kp2, des2 = orb.detectAndCompute(screen_gray, None)
-# BFMatcher 匹配 ...
+c.swipe(540, 800, 540, 400, duration_ms=300)  # 向上滑动
 ```
 
-已有的多尺度匹配（±10%）对常见分辨率变化已足够。
+### 多尺度匹配
+
+自动尝试 ±10% 缩放，适应不同分辨率：
+
+```python
+c.find_image(path, threshold=0.9)
+```
+
+### 中文路径支持
+
+使用 `cv2.imdecode(np.fromfile())` 替代 `cv2.imread()`，完美支持中文路径。
 
 ## 添加新任务
 
-在 `daily_tasks.py` 末尾仿照现有函数添加，
-然后在 `main.py` 的 `run_daily()` 中调用即可。
+1. 在 `steps/` 下创建 `stepN_xxx.py`
+2. 实现 `run()` 函数
+3. 在 `dailyNew.py` 中导入并调用
+
+示例：
+
+```python
+# steps/stepN_xxx.py
+import logging
+from core import MuMuController
+
+log = logging.getLogger(__name__)
+
+def run(c: MuMuController = None):
+    if c is None:
+        c = MuMuController()
+    # 你的逻辑
+    log.info("Step N 完成")
+```
+
+## 图片模板
+
+所有图片存放在 `pics/` 目录下：
+
+```
+pics/
+├── menu/           # 菜单按钮
+│   ├── menu.png
+│   ├── search.png
+│   ├── zhiyeta/    # 职业塔
+│   └── taofa/      # 讨伐
+├── fight/          # 战斗相关
+├── window/         # 窗口按钮
+│   ├── sure.png
+│   ├── close.png
+│   └── continue.png
+└── ...
+```
+
+## 日志
+
+运行日志保存在 `run.log`，同时输出到控制台。
+
+## 常见问题
+
+### 点击无效
+
+尝试使用长按：`c.long_press(x, y, duration_ms=1000)`
+
+### 找不到图片
+
+1. 检查图片路径是否正确
+2. 调低匹配阈值：`threshold=0.8`
+3. 检查游戏界面是否有变化
+
+### 滑动无效
+
+确保使用 `c.swipe()` 而不是 `c.mumu_swipe()`
