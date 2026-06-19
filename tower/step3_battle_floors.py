@@ -205,40 +205,28 @@ def process_single_floor(c: MuMuController, floor: int) -> bool:
     tiaozhan_path = c._pic("menu", "zhiyeta", "tiaozhan.png")
     sure_path = c._pic("window", "sure.png")
 
-    # 重试挑战流程（参考原代码）
-    for retry in range(2):
-        # 1. 查找并点击楼层
-        if not find_floor_and_click(c, floor):
-            return False
-        time.sleep(0.3)
+    # 1. 查找并点击楼层
+    if not find_floor_and_click(c, floor):
+        return False
+    time.sleep(0.3)
 
-        # 2. 点击"挑战"按钮
-        log.info("点击「挑战」...")
-        if not c.find_and_tap(tiaozhan_path):
-            log.warning("⚠️ 未找到挑战按钮")
-            continue
-        time.sleep(1)
+    # 2. 点击"挑战"按钮
+    log.info("点击「挑战」...")
+    if not c.find_and_tap(tiaozhan_path):
+        log.warning("⚠️ 未找到挑战按钮")
+        return False
+    time.sleep(1)
 
-        # 3. 点击队伍位置
-        log.info("点击队伍位置...")
-        adb_click(1200, 720)
-        time.sleep(1)
+    # 3. 点击队伍位置
+    log.info("点击队伍位置...")
+    adb_click(1200, 720)
+    time.sleep(1)
 
-        # 4. 点击确定
-        if c.find_and_tap(sure_path):
-            log.info("点击确定成功")
-            break
-        else:
-            # 如果点不到确定，再试一次挑战流程
-            log.warning("⚠️ 点击确定失败，重试挑战流程...")
-            if retry == 0:
-                # 再次点击挑战和队伍位置
-                c.find_and_tap(tiaozhan_path)
-                time.sleep(1)
-                adb_click(1200, 720)
-                time.sleep(1)
-            continue
-
+    # 4. 点击确定（失败继续往下）
+    if c.find_and_tap(sure_path):
+        log.info("点击确定成功")
+    else:
+        log.warning("⚠️ 点击确定失败，继续往下...")
     time.sleep(0.5)
 
     # 5. 额外点击3次确定（跳过弹窗，参考原代码）

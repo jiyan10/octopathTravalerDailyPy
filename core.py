@@ -371,10 +371,10 @@ class MuMuController:
 
         # 读取模板
         if use_color:
-            template = cv2.imread(template_path, cv2.IMREAD_COLOR)
+            template = cv2.imdecode(np.fromfile(template_path, dtype=np.uint8), cv2.IMREAD_COLOR)
             src = screen
         else:
-            template = cv2.imread(template_path, cv2.IMREAD_GRAYSCALE)
+            template = cv2.imdecode(np.fromfile(template_path, dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
             src = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
 
         if template is None:
@@ -461,9 +461,9 @@ class MuMuController:
             mumu_tap(400, 400, delay)
 
     def tap_empty_long(self, cnt: int = 1, delay: float = 0.3) -> None:
-        """点击空白处（屏幕中央偏左上，一般无交互元素）- 使用长按"""
+        """点击空白处（20, 190）- 使用长按"""
         for _ in range(cnt):
-            mumu_long_press(400, 400, duration_ms=1000)
+            mumu_long_press(20, 190, duration_ms=1000)
             time.sleep(delay)
 
     def swipe(self, x1: int, y1: int, x2: int, y2: int,

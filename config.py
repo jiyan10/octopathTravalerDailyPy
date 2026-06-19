@@ -2,6 +2,7 @@
 配置文件 — 统一管理所有可变参数
 修改设备ID或图片路径时只需改这里
 """
+import os
 
 # ── ADB 设备 ──────────────────────────────────────────────
 DEVICE_ID = "127.0.0.1:16384"   # MuMu 默认端口，多开时改这里
@@ -11,8 +12,8 @@ MUMU_CLI = r"D:\Program Files\Netease\MuMu Player 12\nx_main\mumu-cli.exe"
 ADB = r"D:\Program Files\Netease\MuMu Player 12\nx_device\12.0\shell\adb.exe"
 VM_INDEX = 0                    # 模拟器实例编号（从 0 开始）
 
-# ── 图片资源根目录 ────────────────────────────────────────
-PIC_ROOT = r"H:\pic"
+# ── 图片资源根目录（相对路径，相对于本文件所在目录） ─────
+PIC_ROOT = os.path.join(os.path.dirname(__file__), "pics")
 
 # ── 点击默认延迟（秒）────────────────────────────────────
 DEFAULT_CLICK_DELAY   = 0.5   # 普通点击后等待时间（用户偏好较慢）
@@ -27,4 +28,4 @@ DEFAULT_THRESHOLD = 0.8
 DEFAULT_RETRY_CNT = 5
 
 # ── 日志 ─────────────────────────────────────────────────
-LOG_FILE = r"H:\AI\07_代码脚本\mumu-auto-bg\run.log"
+LOG_FILE = os.path.join(os.path.dirname(__file__), "run.log")

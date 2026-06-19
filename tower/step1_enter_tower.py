@@ -85,18 +85,42 @@ def run_step1(c: MuMuController, job: str) -> bool:
         return False
     time.sleep(2)
 
-    # 3. 长按职业塔（职业名就是塔入口）- 点两次确保有效
+    # 3. 查找职业塔，找不到则下滑重试
     job_path = c._pic("menu", "zhiyeta", f"{job}.png")
+    log.info(f"查找职业塔 {job}...")
+    
+    pos = None
+    for attempt in range(5):
+        pos = c.find_image(job_path, threshold=0.9)
+        if pos:
+            break
+        log.info(f"第 {attempt + 1} 次未找到，下滑...")
+        c.mumu_swipe(540, 800, 540, 400, duration_ms=300)
+        time.sleep(0.5)
+    
+    if not pos:
+        log.warning(f"⚠️ 未找到职业塔 {job}")
+        return False
+    
     log.info(f"长按职业塔 {job} 两次...")
     for attempt in range(2):
-        pos = c.find_image(job_path, threshold=0.9)
-        if not pos:
-            log.warning(f"⚠️ 未找到职业塔 {job}")
-            return False
         log.info(f"第 {attempt + 1} 次长按职业塔 {job}: ({pos[0]}, {pos[1]})")
         c.long_press(pos[0], pos[1], duration_ms=1000)
         time.sleep(0.5)
     time.sleep(0.5)
+
+    # 3.5 检查是否已通关（fivefive.png 表示已打过的职业塔）
+    fivefive_path = c._pic("menu", "zhiyeta", "fivefive.png")
+    if c.is_visible(fivefive_path, threshold=0.9):
+        log.info(f"✅ 职业 {job} 已通关（发现 fivefive.png），跳过")
+        return False
+    time.sleep(0.5)
+
+    # 3.6 检查是否出现"尚未开始"，如果是则跳过该职业
+    shangwei_path = c._pic("menu", "zhiyeta", "shangweikaishi.png")
+    if c.is_visible(shangwei_path):
+        log.info(f"⚠️ {job} 尚未开始，跳过该职业")
+        return False
 
     # 4. 点击"进入试炼之塔"按钮
     log.info("点击「进入试炼之塔」...")
