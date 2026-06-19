@@ -95,7 +95,7 @@ def run_step1(c: MuMuController, job: str) -> bool:
         if pos:
             break
         log.info(f"第 {attempt + 1} 次未找到，下滑...")
-        c.mumu_swipe(540, 800, 540, 400, duration_ms=300)
+        c.swipe(540, 800, 540, 400, duration_ms=300)
         time.sleep(0.5)
     
     if not pos:
